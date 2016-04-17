@@ -1,0 +1,113 @@
+@font-face {
+    font-family: helsing;
+    src: url("../fonts/Van Helsing.ttf");
+}
+@font-face {
+    font-family: toxia;
+    src: url("../fonts/Toxia_FRE.ttf");
+}
+@font-face {
+    font-family: werewolf;
+    src: url("../fonts/WereWolf.ttf");
+}
+@font-face {
+  font-family: 'Glyphicons Halflings';
+
+  src: url('../fonts/glyphicons-halflings-regular.eot');
+  src: url('../fonts/glyphicons-halflings-regular.eot?#iefix') format('embedded-opentype'), url('../fonts/glyphicons-halflings-regular.woff2') format('woff2'), url('../fonts/glyphicons-halflings-regular.woff') format('woff'), url('../fonts/glyphicons-halflings-regular.ttf') format('truetype'), url('../fonts/glyphicons-halflings-regular.svg#glyphicons_halflingsregular') format('svg');
+}
+body{
+	font-size: 20px;
+}
+*{
+	-webkit-transition: width 1s, height 1s, background-color 1s, -webkit-transform 1s, border 0.4s;
+    transition: width 1s, height 1s, background-color 1s, transform 1s, border 0.4s;
+}
+
+.mainmenu{
+	margin-top: 200px;
+	text-align: center;
+	font-family: helsing;
+	color: #af111c;
+}
+h1{
+	font-family: werewolf;
+	color: #af111c;	
+}
+
+.house{
+	display:inline-block;
+	width: 300px;
+	height: 200px;
+	margin: 0;
+	padding: 0;
+	background-color: transparent;
+	vertical-align: text-bottom;
+	position: relative;
+	cursor: pointer;
+	border: solid;
+}
+.house span{
+	font-size: 200%;
+	position: absolute;
+	bottom:0;
+	font-family: werewolf;	
+	color: #af111c;
+}
+
+.city{
+	background-attachment: local;
+	background-image: url(../img/paper.jpg);
+    border-radius: 6px;	
+	
+	overflow-x: scroll;
+	overflow-y: hidden; 
+	white-space: nowrap 
+}
+.house.selected {
+	border: #af111c solid;
+}
+.house:hover{
+	border: red solid;
+	font-weight: bold;	
+}
+.details, .details h3 {
+	font-family: helsing;	
+}
+.cover{
+	left:0;
+}
+.topinfo{
+	font-family: helsing;	
+}
+.modal-header h1{
+	color: #af111c;
+	font-family: werewolf;
+}
+.modal-body h2{
+	font-family: helsing;
+}
+.modal-dialog{
+	font-family: helsing;	
+}
+strong{
+	color: #af111c;	
+	text-shadow: 1px 1px 1px rgba(0,0,0,0.3);
+}
+strong.prowl{
+	color: #700BDC;
+}
+strong.cower{
+	color: #816C5B;
+}
+strong.bite{
+	color: yellow;
+}
+.navbar-text {
+    line-height: 18px;
+}
+.action{
+	border: 1px solid rgba(0,0,0,0.6);
+	padding: 5px;
+	border-radius: 6px;
+}

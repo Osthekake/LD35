@@ -1,0 +1,669 @@
+<meta charset="utf-8">
+<!DOCTYPE html>
+<html class="no-js">
+    <head>
+        <title>Ludum Dare 35</title>
+        <link rel="stylesheet" type="text/css" href="css/bootstrap.min.css">
+        <link rel="stylesheet" type="text/css" href="css/styles.css">
+        <script type="text/javascript" src="lib/jquery-2.2.3.min.js"></script>
+        <script type="text/javascript" src="lib/handlebars-v4.0.5.js"></script>
+        <script type="text/javascript" src="lib/bootstrap.min.js"></script>
+    </head>
+    <body>
+    	<nav class="navbar navbar-default" id="infobar"></nav>
+    	<div id="renderTo"></div>
+    	<!-- Modal -->
+		<div id="gameOverModal" class="modal fade" role="dialog"></div>
+		<div id="helpModal" class="modal fade" role="dialog">
+			<div class="modal-dialog" >
+				<div class="modal-content">
+					<div class="modal-header">
+						<h1 class="modal-title">
+							Information
+						</h1>
+					</div>
+					<div id="helpModalInsert"></div>
+					<div class="modal-footer">
+						<button type="button" class="btn btn-primary btn-lg" data-dismiss="modal">Ok</button>
+					</div>
+				</div>
+			</div>
+		</div>
+		<div id="actionModal" class="modal fade" role="dialog"></div>
+
+	    <!-- Templates go here -->
+	    <script id="mainMenu" type="text/x-handlebars-template">
+	    	<div class="mainmenu container">
+		    	<div class="jumbotron">
+		    		<h1>Werewolf</h1>
+				  	<p>Select a city to prey on</p>
+				  	{{#each unlocked}}
+					  	<div class="row">
+					  		<span class="col-md-4"></span>
+					  		<button 
+					  			class="btn btn-primary btn-lg col-md-4" 
+					  			onclick="Game.start('{{this}}');">
+					  			{{this}}
+					  		</button>
+					  		<span class="col-md-4"></span>
+				  		</div>
+			  		{{/each}}
+				</div>
+			</div>
+	    </script>
+
+	    <script id="win" type="text/x-handlebars-template">
+	    	<div class="modal-dialog" style="background-image: url(img/night.jpg);">
+				<div class="modal-content">
+					<div class="modal-header">
+						<h1 class="modal-title">
+							You win!
+						</h1>
+					</div>
+					<div class="modal-body">
+						<p>Congratulations!</p>
+						<p>You have overcome the challenges of {{currentcity.name}}</p>
+						<i>{{currentcity.winmessage}}</i>
+						{{#if currentcity.unlock}}
+							<p>{{currentcity.unlock}} is now available in the main menu</p>
+						{{/if}}
+					</div>
+					<div class="modal-footer">
+						<button type="button" class="btn btn-primary btn-lg" data-dismiss="modal">
+							Back to main menu
+						</button>
+					</div>
+				</div>
+			</div>
+	    </script>
+
+	    <script id="lose" type="text/x-handlebars-template">
+	    	<div class="modal-dialog">
+				<div class="modal-content">
+					<div class="modal-header">
+						<h1 class="modal-title">
+							You have lost
+						</h1>
+					</div>
+					<div class="modal-body">
+						{{#if killed}}
+							<p>You were killed by villagers</p>
+							<p>Try to avoid raising <span class="glyphicon glyphicon-tower"></span></p>
+						{{else}}
+							<p>You have starved to death</p>
+							<p>You have to remember to <strong>feed</strong>!</p>
+						{{/if}}
+						<p>Remember to use your full moons wisely.</p>
+						<p>You can try {{currentcity.name}} again from the main menu</p>
+					</div>
+					<div class="modal-footer">
+						<button type="button" class="btn btn-primary btn-lg" data-dismiss="modal">
+							Back to main menu
+						</button>
+					</div>
+				</div>
+			</div>
+	    </script>
+
+	    <script id="cityHelpModal" type="text/x-handlebars-template">
+    		<div class="modal-body">
+    			{{#unless currentcity.days}}
+    				<h2>Welcome to {{currentcity.name}}</h2>
+    			{{else}}
+    				<p>You have been in the city of {{currentcity.name}} for {{currentcity.days}} days</p>
+    			{{/unless}}
+    			<p>{{currentcity.message}}</p>
+				{{#if currentcity.hide}} 
+					<p>
+						You have a hideout where you may <strong class="cower">hide</strong> in to lower 
+						<span class="glyphicon glyphicon-tower"></span> 
+						which cause difficulties when you try to <strong>feed</strong> 
+						and <strong class="bite">bite</strong>
+					</p>
+				{{/if}}
+				{{#if currentcity.prowl}} 
+					<p>
+						The wilderness near the houses allow you to <strong class="prowl">prowl</strong> to gain 
+						<span class="glyphicon glyphicon-eye-open"></span> which will help you 
+						<strong>feed</strong> and <strong class="bite">bite</strong> later on
+					</p>
+				{{/if}}
+				{{#if currentcity.bite}} 
+					<p>
+						You have the gift of Lycan allowing you to 
+						<strong class="bite">turn</strong> people with a 
+						<strong class="bite">bite</strong> which will give you large amounts of 
+						<span class="glyphicon glyphicon-eye-open"></span>
+					</p>
+				{{/if}}
+				<p>There are {{currentcity.houseamount}} houses here</p>
+				<p>You must <strong>eat</strong> or <strong class="bite">turn</strong> all the inhabitants of the city
+					{{#if currentcity.timelimit}} 
+						within {{currentcity.timelimit}} days or
+					{{/if}}
+					before you starve
+				</p>
+				{{#if currentcity.hunt}} 
+					<p>
+						The inhabitants of this city will <strong>hunt</strong> you if their 
+						<span class="glyphicon glyphicon-tower"></span> is high enough!
+						While you are being hunted
+						{{#if currentcity.hide}} 
+							you will be forced to <strong class="cower">hide</strong> in your hideout
+						{{else}}
+							you may not perform any actions
+						{{/if}}
+					 </p>
+				{{/if}}
+				{{#if currentcity.timelimit}} 
+					<p>You have {{currentcity.timeleft}} days left</p>
+				{{/if}}
+			</div>
+	    </script>
+
+	    <script id="moonHelpModal" type="text/x-handlebars-template">
+    		<div class="modal-body">
+				<p>
+				{{#if currentcity.fullmoon}}
+    				<h2>It is currently a full moon</h2>
+        		{{else}}
+					There is {{currentcity.mooncycle}} days to the next full moon
+				{{/if}}
+				</p>
+				<p>
+					In this city there will be a full moon every {{currentcity.mooncyclelength}} days
+				</p>
+				<p>
+					During a full moon you will gain 
+					<span class="glyphicon glyphicon-eye-open"></span> 
+					from any previous <strong class="bite">bite</strong> as the victims turn
+				</p>
+				<p>
+					The full moon grants you immense power and you will always manage to <strong>feed</strong>
+				</p>
+				{{#if currentcity.hide}} 
+					<p>You will not be able to <strong class="cower">hide</strong> during a full moon</p>
+				{{/if}}
+			</div>
+	    </script>
+
+	    <script id="starveHelpModal" type="text/x-handlebars-template">
+			<div class="modal-body">
+				{{#if currentcity.starve}}
+    				<h2 style="color:  #af111c;">
+    					You have to <strong>feed</strong> tonight or you will starve to death!
+					</h2>
+        		{{else}}
+    				You have to <strong>feed</strong> during the next {{currentcity.feed}} days or starve
+    			{{/if}}
+    			<p>
+    				<strong>feeding</strong> will last you for {{currentcity.feedfor}} days in this city
+    			</p>
+				<p>
+				 	Starving is an immediate Game Over
+				</p>
+				<p>
+					<strong>Feed</strong> by selecting a house and press the <strong>feed</strong> button
+				</p>
+			</div>
+		</script>
+
+		 <script id="bittenHelpModal" type="text/x-handlebars-template">
+			<div class="modal-body">
+				<h2>
+					The victims of your <strong class="bite">bite</strong> have turned!
+				</h2>
+        		{{#each modal.bitten}}
+    				<p>
+    					{{name}} delved secrets resulting in {{amount}} 
+    					<span class="glyphicon glyphicon-eye-open"></span>
+    					on all their friends
+					</p>
+    			{{/each}}
+			</div>
+		</script>
+
+	    <script id="prowlModal" type="text/x-handlebars-template">
+	    	<div class="modal-dialog">
+				<!-- Modal content-->
+				<div class="modal-content" >
+					<div class="modal-header">
+						<h1 class="modal-title">
+							Prowl
+						</h1>
+					</div>
+					<div class="modal-body">
+						<p>
+							You <strong class="prowl">prowl</strong> {{selectedhouse.name}} for 
+							an evening and gain {{modal.intelligencegain}} 
+							<span class="glyphicon glyphicon-eye-open"></span>
+							on them and increased your chance of future action against them
+						</p>
+						<p>You are still hungry</p>
+					</div>
+					<div class="modal-footer">
+						<button type="button" class="btn btn-primary btn-lg" data-dismiss="modal">
+							Leave through the shadows
+						</button>
+					</div>
+				</div>
+			</div>
+	    </script>
+
+	    <script id="hideModal" type="text/x-handlebars-template">
+	    	<div class="modal-dialog">
+				<!-- Modal content-->
+				<div class="modal-content" >
+					<div class="modal-header">
+						<h1 class="modal-title">
+							Hide
+						</h1>
+					</div>
+					<div class="modal-body">
+						<p>You <strong class="cower">hide</strong> away in your hideout for an evening</p>
+						<p>
+							<span class="glyphicon glyphicon-tower"></span> 
+							is lowered by {{modal.securitygain}} throughout
+						</p>
+						<p>You are still hungry</p>
+					</div>
+					<div class="modal-footer">
+						<button type="button" class="btn btn-primary btn-lg" data-dismiss="modal">
+							Conserve your energy
+						</button>
+					</div>
+				</div>
+			</div>
+	    </script>
+
+	    <script id="biteModal" type="text/x-handlebars-template">
+	    	<div class="modal-dialog">
+				<!-- Modal content-->
+				<div class="modal-content">
+					<div class="modal-header">
+						<h1 class="modal-title">
+							{{#if modal.success}}
+								Bite
+							{{else}}
+								Failure!
+							{{/if}}
+						</h1>
+					</div>
+					<div class="modal-body">
+						{{#if modal.success}}
+							<p>You managed to <strong class="bite">bite</strong> {{selectedhouse.name}}!</p>
+							<p>
+								They will turn during the next full moon, giving you 
+								<span class="glyphicon glyphicon-eye-open"></span> 
+								on their friends
+							</p>
+						{{else}}
+							<p>You tried to bite {{selectedhouse.name}} but they fled</p>
+							<p>
+								{{selectedhouse.name}} has increased their 
+								<span class="glyphicon glyphicon-tower"></span> 
+								by {{modal.securitygain}}
+							</p>
+							<p>
+								{{selectedhouse.name}} has told their friends about you and increased their 
+								<span class="glyphicon glyphicon-tower"></span>
+								as well
+							</p>
+						{{/if}}
+						<p>You are still hungry</p>
+					</div>
+					<div class="modal-footer">
+						<button type="button" class="btn btn-primary btn-lg" data-dismiss="modal">
+							{{#if modal.success}}
+								Leave for now
+							{{else}}
+								Act natural
+							{{/if}}
+						</button>
+					</div>
+				</div>
+			</div>
+	    </script>
+
+	    <script id="huntModal" type="text/x-handlebars-template">
+	    	<div class="modal-dialog">
+				<!-- Modal content-->
+				<div class="modal-content">
+					<div class="modal-header">
+						<h1 class="modal-title">
+							You are being hunted!
+						</h1>
+					</div>
+					<div class="modal-body">
+						<p>People have armed themselves and are searching for you</p>
+						{{#each modal.hunters}}
+							{{#if found}}
+								{{#if bitten}}
+									<p>{{name}} found you and was <strong class="bite">bitten</strong> in the following struggle</p>	
+								{{else}}
+									<p>You are shook with pain as {{name}} <strong>shot</strong> you with a silver bullet</p>
+								{{/if}}
+							{{else}}
+								<p>
+									{{name}} did not <strong class="prowl">find</strong> you and their 
+									<span class="glyphicon glyphicon-tower"></span> 
+									was lowered by {{roll}}
+								</p>
+							{{/if}}
+						{{/each}}
+						{{#if killed}}
+							<p>You have been killed</p>
+						{{else}}
+							<p>you could not do anything because of the ongoing <strong>hunt</strong></p>
+						{{/if}}
+					</div>
+					<div class="modal-footer">
+						<button type="button" class="btn btn-primary btn-lg" data-dismiss="modal">
+							{{#if killed}}
+								Sink dead to the ground
+							{{else}}
+								That was close
+							{{/if}}
+						</button>
+					</div>
+				</div>
+			</div>
+	    </script>
+
+	    <script id="feedModal" type="text/x-handlebars-template">
+	    	<div class="modal-dialog">
+				<!-- Modal content-->
+				<div 
+					class="modal-content"
+					{{#if currentcity.fullmoon}}
+	    				style="background-image: url(img/moon.jpg);"
+	        		{{/if}}
+	        		>
+					<div class="modal-header">
+						<h1 class="modal-title">
+							{{#if modal.success}}
+								Feed
+							{{else}}
+								Failure!
+							{{/if}}
+						</h1>
+					</div>
+					<div class="modal-body">
+							{{#if modal.success}}
+								<p>You murdered and ate {{selectedhouse.name}}!</p>
+								<p>This has sated your hunger for now</p>
+								<p>You will not need to feed again for another 3 days</p>
+							{{else}}
+								<p>{{selectedhouse.name}} was too well prepared and saw you coming</p>
+								<p>
+									Knowing that their suspicions were correct {{selectedhouse.name}} 
+									has increased their 
+									<span class="glyphicon glyphicon-tower"></span>
+									by {{modal.securitygain}}
+								</p>
+								<p>
+									{{selectedhouse.name}} has told their friends about you and increased their 
+									<span class="glyphicon glyphicon-tower"></span>
+									as well
+								</p>
+							{{/if}}
+						</p>
+					</div>
+					<div class="modal-footer">
+						<button type="button" class="btn btn-primary btn-lg" data-dismiss="modal">
+						{{#if modal.success}}
+							Howl
+						{{else}}
+							Slink away
+						{{/if}}
+						</button>
+					</div>
+				</div>
+			</div>
+	    </script>
+
+	    <script id="cityInfo" type="text/x-handlebars-template">
+    		<div 
+    			class="container-fluid topinfo"
+    			{{#if currentcity.fullmoon}}
+    				style="background-image: url(img/moon.jpg);"
+        		{{/if}}
+        		{{!--
+        		{{#unless currentcity.fullmoon}}
+    				style="background-image: url(img/night.jpg);"
+        		{{/unless}}
+        		--}}
+    			>
+			    <!-- Collect the nav links, forms, and other content for toggling -->
+			    <div class="collapse navbar-collapse" id="bs-example-navbar-collapse-1">
+			    	<h1 class="navbar-text">Werewolf</h1>
+			      	<ul class="nav navbar-nav">
+			      		<li><a href="#" onclick="Game.cityHelp();">
+			      			{{#if currentcity.timelimit}}
+			      				You have {{currentcity.timeleft}} days left
+			      			{{else}}
+			      				You have spent {{currentcity.days}} days in {{currentcity.name}}
+			      			{{/if}}
+		      			</a></li>
+			        	<li><a href="#" onclick="Game.starveHelp();">
+			        		{{#if currentcity.starve}}
+			        			<span style="color: #af111c;">
+			        				You have to <strong>feed</strong> tonight or starve
+			        			</span>
+		        			{{else}}
+		        				Have to <strong>feed</strong> within {{currentcity.feed}} days
+		        			{{/if}}
+		        		</a></li>
+			        	{{#if currentcity.fullmoon}}
+			        		<li><a href="#" onclick="Game.moonHelp();" style="color: yellow;">
+			        			It's a full moon!
+		        			</a></li>	
+		        		{{else}}
+			        		<li><a href="#" onclick="Game.moonHelp();">
+			        			Full moon in {{currentcity.mooncycle}} days
+		        			</a></li>
+		        		{{/if}}
+		        		<li><p class="navbar-text">Click these for help</p></li>
+		        		<li role="separator" class="divider"></li>
+		        		<li><a href="#" onclick="Game.about();">
+		        			About
+	        			</a></li>	
+			      	</ul>
+			    </div><!-- /.navbar-collapse -->
+		  	</div><!-- /.container-fluid -->
+	    </script>
+
+	    <script id="game" type="text/x-handlebars-template">
+    		<div class="container">
+				<div class="city">
+					{{#if currentcity.hide}}
+	    				<span 
+							class="house jumbotron {{#unless selectedhouse}}selected{{/unless}}" 
+							style="background-image:url(img/hide.png);"
+							onclick="Game.selectHouse(undefined);">
+							<span>Hideout</span>
+						</span>
+					{{/if}}
+					{{#each currentcity.houses}}
+						<span 
+							class="house jumbotron {{#if selected}}selected{{/if}}" 
+							style="background-image:url(img/{{image}});"
+							onclick="Game.selectHouse('{{key}}');">
+							{{#if cleared}}
+								<img class="cover" src="img/done.png">
+							{{else}}
+			    				<span>{{name}}</span>
+		    				{{/if}}
+						</span>
+					{{/each}}
+		    	</div>
+		    	<div class="details row">
+		    		{{#if selectedhouse}}
+		    			<h2 style="font-family: werewolf;">
+			    			{{selectedhouse.name}}'s House
+		    			</h2>
+		    			<div style="display: flex;">
+				    		<span class="info jumbotron col-md-6">
+					    		<h3>Details</h3>
+			    				{{#if selectedhouse.cleared}}
+			    					<span class="row">
+			    						<strong class="col-md-6">Cleared</strong> 
+					    				<span class="col-md-6">{{selectedhouse.cleared}}</span>
+			    					</span>
+			    				{{/if}}
+			    				{{#if selectedhouse.bitten}}
+			    					<span class="row">
+			    						<strong class="col-md-6">Infected</strong> 
+					    				<span class="col-md-6">will turn in {{currentcity.mooncycle}} days</span>
+			    					</span>
+			    				{{/if}}
+				    			<span class="row">
+					    			<strong class="col-md-6"><span class="glyphicon glyphicon-eye-open"></span></strong> 
+					    			<span class="col-md-6">{{selectedhouse.intelligence}}</span>
+				    			</span>
+				    			<span class="row">
+					    			<strong class="col-md-6"><span class="glyphicon glyphicon-tower"></span></strong> 
+					    			<span class="col-md-6">{{selectedhouse.security}}</span>
+				    			</span>
+				    			<span class="row">
+					    			<strong class="col-md-6">Occupation</strong> 
+					    			<span class="col-md-6">{{selectedhouse.occupation}}</span>
+				    			</span>
+				    			<span class="row">
+					    			<strong class="col-md-6">Age</strong> 
+					    			<span class="col-md-6">{{selectedhouse.age}}</span>
+				    			</span>
+			    				<span class="row">
+				    				<strong class="col-md-6">Friends</strong> 
+				    				<span  class="col-md-6"><ul style="list-style-type:none">
+				    					{{#each selectedhouse.friendobjs}}
+				    						<li>{{name}}</li>
+				    					{{else}}
+				    						none
+				    					{{/each}}
+				    				</ul></span>
+			    				</span>
+			    			</span>
+			    			<span class="tasks jumbotron col-md-6">
+			    				<h3>Actions</h3>
+			    				{{#unless selectedhouse.cleared}}
+			    					{{#if currentcity.prowl}}
+					    				<div class="row action" >
+					    					<button 
+					    						class="btn btn-primary btn-lg col-md-6" 
+					    						style="color: #700BDC;"
+					    						onclick="Game.prowl();">
+					    						Prowl
+					    						</button>
+					    					<span class="col-md-6">
+					    						Increase <span class="glyphicon glyphicon-eye-open"></span>
+				    						</span>
+										</div>
+									{{/if}}
+									{{#if currentcity.bite}}
+					    				<div class="row action">
+					    					<button 
+					    						class="btn btn-primary btn-lg col-md-6" 
+					    						style="color: yellow;"
+				    							{{#if selectedhouse.bitten}}disabled{{/if}}
+					    						onclick="Game.bite();">
+					    						Bite
+					    						<span>({{selectedhouse.bitechance}} %)</span>
+					    					</button>
+					    					{{#if selectedhouse.bitten}}
+					    						<span class="col-md-6">Already bitten</span>
+					    					{{else}}
+					    						<span class="col-md-6">
+					    							Turn to your side to gain
+					    							<span class="glyphicon glyphicon-eye-open"></span>
+					    							on the next full moon
+				    							</span>
+					    					{{/if}}
+					    				</div>
+				    				{{/if}}
+				    				{{#if currentcity.eat}}
+					    				<div class="row action">
+					    					<button 
+					    						class="btn btn-primary btn-lg col-md-6" 
+					    						style="color: #af111c;"
+					    						onclick="Game.feed();">
+						    					Feed 
+						    					{{#if currentcity.fullmoon}}
+						    						<strong>(Guaranteed!)</strong>
+					    						{{else}}
+						    						<span>({{selectedhouse.feedchance}} %)</span>
+					    						{{/if}}
+					    					</button>
+											<span class="col-md-6">Satisfy your hunger</span>
+					    				</div>
+					    			{{/if}}
+			    				{{else}}
+				    				<h3>This house is cleared</h3>
+				    			{{/unless}}
+				    			{{#if selectedhouse.turned}}
+				    				<div>
+				    					You have infected {{selectedhouse.name}} and they have given 
+				    					<span class="glyphicon glyphicon-eye-open"></span> 
+				    					about their friends
+			    					</div>
+			    				{{/if}}
+			    				{{#if selectedhouse.eaten}}
+				    				<div>
+				    					You have eaten {{selectedhouse.name}} and they will sate your hunger for a while
+			    					</div>
+			    				{{/if}}
+			    			</span>
+		    			</div>
+	    			{{else}}
+	    				{{#if currentcity.hide}}
+	    					<h2 style="font-family: werewolf;">
+				    			Your hideout
+			    			</h2>
+			    			<div style="display: flex;">
+				    		<span class="info jumbotron col-md-6">
+					    		<h3>Details</h3>
+			    				<span class="row">
+		    						<strong class="col-md-6">Inhabitants</strong> 
+		    						{{#if currentcity.turned}}
+				    					<span class="col-md-6">You and {{currentcity.turned}} others you have turned</span>
+				    				{{else}}
+										<span class="col-md-6">You</span>
+			    					{{/if}}
+		    					</span>
+		    				</span>
+		    				<span class="tasks jumbotron col-md-6">
+			    				<h3>Actions</h3>
+			    				<div class="row action" >
+			    					<button 
+			    						class="btn btn-primary btn-lg col-md-6" 
+			    						style="color: #816C5B;"
+			    						{{#if currentcity.fullmoon}}disabled{{/if}}
+			    						onclick="Game.hide();">
+			    						Hide
+		    						</button>
+			    					<span class="col-md-6">
+			    						{{#if currentcity.fullmoon}}
+			    							May not <strong class="cower">hide</strong> during full moon
+			    						{{else}}
+			    							Decrease overall <span class="glyphicon glyphicon-tower"></span>
+			    						{{/if}}
+		    						</span>
+								</div>
+							</span>
+		    			{{else}}
+		    				<h2 style="font-family: werewolf;">
+				    			Nowhere to <strong class="cower">hide</strong>
+			    			</h2>
+			    			<div class="jumbotron">Select a house above</div>
+		    			{{/if}}
+	    				
+	    			{{/if}}
+		    	</div>
+	    	</div>
+	    </script>
+
+	    <!-- This has to go at the end! -->
+	    <script type="text/javascript" src="templates.js"></script>
+        <script type="text/javascript" src="main.js"></script>
+    </body>
+</html>
