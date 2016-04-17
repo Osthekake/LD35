@@ -184,61 +184,6 @@ Game.cities = {
 		hunt:true,
 		unlock: "Bergen"
 	},
-	"Vanillaville": {
-		name:"Vanillaville",
-		houses : {
-			"house1": {
-				key:"house1", 
-				name:"John Hawthorne", 
-				age:23, 
-				occupation:"Baker", 
-				image:"red_house.png", 
-				intelligence:50, 
-				security:50,
-				friends: ["house2", "house4"]
-			},
-			"house2": {
-				key:"house2", 
-				name:"Amanda Singer", 
-				age:53, 
-				occupation:"Police", 
-				image:"green_house.png", 
-				intelligence:50, 
-				security:50,
-				friends: ["house1", "house3", "house4"]
-			},
-			"house3": {
-				key:"house3", 
-				name:"Jesse Blotchley", 
-				age:24, 
-				occupation:"Dancer", 
-				image:"white_house.png", 
-				intelligence:50, 
-				security:50,
-				friends: ["house2"]
-			},
-			"house4": {
-				key:"house4", 
-				name:"Jeremy Sathes", 
-				age:35, 
-				occupation:"Bus driver", 
-				image:"yellow_house.png", 
-				intelligence:50, 
-				security:100,
-				friends: ["house1", "house2"]
-			}
-		},
-		houseamount:4,
-		startfeed: 10,
-		startmoon: 20,
-		turned:0,
-		feedfor: 20,
-		mooncyclelength: 28,
-		bite:true,
-		hide:true,
-		hunt:true,
-		unlock: "Bergen"
-	},
 	"Bergen": {
 		name:"Bergen",
 		houses : {
@@ -324,7 +269,7 @@ Game.cities = {
 			}
 		},
 		message: "Go nuts and use everyhting you have learned",
-		winmessage: "Thanks for playing beta test!",
+		winmessage: "This was easy. Let's go to Hell's Kitchen.",
 		houseamount:8,
 		startfeed: 4,
 		startmoon: 3,
@@ -335,13 +280,80 @@ Game.cities = {
 		bite:true,
 		hide:true,
 		eat:true,
-		unlock: "Bergen"
+		unlock: "Hells Kitchen"
+	},
+	"Hells Kitchen": {
+		name:"Hells Kitchen",
+		houses : {
+			"house1": {
+				key:"house1", 
+				name:"Matt Murdock", 
+				age:34, 
+				occupation:"Lawyer", 
+				image:"red_house.png", 
+				intelligence:30, 
+				security:70,
+				friends: ["house2", "house3"]
+			},
+			"house2": {
+				key:"house2", 
+				name:"Natasha Romanova", 
+				age:31, 
+				occupation:"Spy", 
+				image:"white_house.png", 
+				intelligence:20, 
+				security:70,
+				friends: ["house1", "house4", "house5"]
+			},
+			"house3": {
+				key:"house3", 
+				name:"Elektra Natchios", 
+				age:28, 
+				occupation:"Assassin", 
+				image:"red_house2.png", 
+				intelligence:0, 
+				security:70,
+				friends: ["house1"]
+			},
+			"house4": {
+				key:"house4", 
+				name:"Steve Rogers", 
+				age:97, 
+				occupation:"Captain", 
+				image:"blue_house.png", 
+				intelligence:15, 
+				security:60,
+				friends: ["house2", "house5"]
+			},
+			"house5": {
+				key:"house5", 
+				name:"Clint Barton", 
+				age:24, 
+				occupation:"Head of Security", 
+				image:"green_house.png", 
+				intelligence:10, 
+				security:100,
+				friends: ["house2", "house4"]
+			}
+		},
+		message: "This is the final challenge. There is some randomness so you will probably have to try many times.",
+		winmessage: "Thanks for playing!",
+		houseamount:5,
+		startfeed: 4,
+		startmoon: 5,
+		turned:0,
+		feedfor: 5,
+		mooncyclelength: 7,
+		prowl:true,
+		bite:true,
+		hide:true,
+		eat:true,
 	}
 };
 
 Game.context = {
 	unlocked : ["Killville"]
-	//unlocked : ["Castle Rock"]
+	//unlocked : ["Hells Kitchen"]
 };
 
 Game.turnHelp = [];
@@ -519,7 +531,7 @@ Game.biteFail = function(){
 Game.prowl = function(){
 	//all prowls are successful
 	Game.context.modal = {};
-	Game.context.modal.intelligencegain =  Math.floor(Math.random() * 20) + 10;
+	Game.context.modal.intelligencegain =  Math.floor(Math.random() * 25) + 10;
 	//Game.context.selectedhouse.intelligence += Game.context.modal.intelligencegain;
 
 	var key = Game.context.currenthousekey;
@@ -740,7 +752,7 @@ Game.win = function(){
 	Game.renderTo("#win", $modal);
 	var unlocked = Game.context.currentcity.unlock;
 	console.log("unlocked " + unlocked);
-	if($.inArray(unlocked, Game.context.unlocked) == -1)
+	if(unlocked && $.inArray(unlocked, Game.context.unlocked) == -1)
 		Game.context.unlocked.push(unlocked);
 	console.log(Game.context.unlocked);
 	$modal.modal();

@@ -24,7 +24,7 @@ Ludum Dare 35 48h entry
 <h3>I used these free fonts:</h3>
 <ul>
 	<li>Werewolf font</li>
-	<li>Van Helsingfont</li>
+	<li>Van Helsing font</li>
 </ul>
 
 <p>The rest of the art and code is made entirely by me - Osthekake (Andreas)</p>
